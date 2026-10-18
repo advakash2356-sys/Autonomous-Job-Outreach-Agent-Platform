@@ -1,4 +1,4 @@
-export type SovereignIdentityAnchor = 'Adv.akash2356@gmail.com';
+export type SovereignIdentityAnchor = string;
 
 export type UserRole = 'SovereignRootAdmin' | 'Auditor' | 'Guest' | 'Unauthorized';
 

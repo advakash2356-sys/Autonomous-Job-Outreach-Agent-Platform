@@ -44,10 +44,12 @@ import { CareerOpsVerifier } from "./src/utils/careerOpsVerifier";
 import { INITIAL_JOB_LEADS } from "./src/data/initialLeads";
 
 dotenv.config();
+// Owner/admin email: set OWNER_EMAIL in .env (see .env.example)
+const OWNER_EMAIL = process.env.OWNER_EMAIL || 'admin@example.com';
 
 const app = express();
 const PORT = 3000;
-const SOVEREIGN_ANCHOR: SovereignIdentityAnchor = "Adv.akash2356@gmail.com";
+const SOVEREIGN_ANCHOR: SovereignIdentityAnchor = OWNER_EMAIL;
 
 // Initialize Gemini Client
 const geminiApiKey = process.env.GEMINI_API_KEY || "";
@@ -81,7 +83,7 @@ let careerOpsVoiceDNA: VoiceDNARules = { ...DEFAULT_VOICE_DNA };
 
 let serverResumeProfile: CandidateParsedProfile = {
   fullName: "Adv. Akash",
-  email: "Adv.akash2356@gmail.com",
+  email: OWNER_EMAIL,
   phone: "+1 (555) 019-2834",
   technicalSkills: ["React 19", "TypeScript", "Node.js", "Express", "Distributed DAG Planning", "Zero-Trust Security", "Tailwind CSS", "DSPy Optimization", "Redis", "PostgreSQL"],
   experienceYears: 7,
@@ -314,7 +316,7 @@ let episodicVectorStore: VectorEpisodicMemoryItem[] = [
   {
     id: "vec-02",
     title: "Zero-Trust OIDC Token Signature Verifier",
-    summary: "Cryptographic signature validation pipeline enforcing strict matching with Adv.akash2356@gmail.com and SHA256 integrity.",
+    summary: "Cryptographic signature validation pipeline enforcing strict matching with " + OWNER_EMAIL + " and SHA256 integrity.",
     embeddingPreview: [0.312, -0.054, 0.621, -0.144, 0.892, 0.119],
     fullTrace: "SecurityAuditor evaluated OIDC headers, validated token expiration, checked signature hash against root anchor.",
     tags: ["Security", "OIDC", "RBAC", "ZeroTrust"],
@@ -339,7 +341,7 @@ let semanticKnowledgeGraph: SemanticGraphEntity[] = [
     id: "entity-root-admin",
     label: "Sovereign Root Administrator Anchor",
     type: "Policy",
-    description: "Anchor Identity Adv.akash2356@gmail.com holding root authority, kill-switch control, and telemetry access.",
+    description: "Anchor Identity " + OWNER_EMAIL + " holding root authority, kill-switch control, and telemetry access.",
     relations: [
       { targetId: "entity-l1-ceo", relationType: "governs_and_overrides" },
       { targetId: "entity-kill-switch", relationType: "commands" }
@@ -1753,7 +1755,7 @@ I have built zero-trust multi-agent frameworks with topological execution and wo
 
 Best regards,
 Adv. Akash
-Adv.akash2356@gmail.com`,
+${OWNER_EMAIL}`,
         lastUpdated: new Date().toISOString()
       };
     }
@@ -1784,7 +1786,7 @@ Adv.akash2356@gmail.com`,
 
 // AI Tailored Cover Letter & Drip Cadence Synthesizer API
 app.post("/api/leads/synthesize-cover-letter", async (req, res) => {
-  const { resumeText, lead, tone = "direct", applicantName = "Adv. Akash", applicantEmail = "Adv.akash2356@gmail.com", focusAreas } = req.body;
+  const { resumeText, lead, tone = "direct", applicantName = "Adv. Akash", applicantEmail = OWNER_EMAIL, focusAreas } = req.body;
 
   if (!lead || !lead.id) {
     return res.status(400).json({ error: "Valid Job Lead object required." });
@@ -2530,7 +2532,7 @@ function generateDeterministicCareerOpsResult(mode: CareerOpsMode, jobTitle: str
       ]
     },
     tailoredCVMarkdown: `# Adv. Akash
-San Francisco, CA | Adv.akash2356@gmail.com | +1 (555) 019-2834 | github.com/akash-arch | linkedin.com/in/adv-akash
+San Francisco, CA | ${OWNER_EMAIL} | +1 (555) 019-2834 | github.com/akash-arch | linkedin.com/in/adv-akash
 
 ## Executive Summary
 Results-driven Lead Distributed Systems Architect with 7+ years of experience specializing in high-throughput multi-agent DAG execution, React 19/TypeScript applications, and zero-trust cryptographic security.
