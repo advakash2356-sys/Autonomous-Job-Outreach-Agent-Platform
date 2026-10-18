@@ -1,4 +1,5 @@
 import express from "express";
+import { userKeyMiddleware, resolveGeminiKey, hasRequestKey } from "./server/userKey";
 import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
@@ -52,16 +53,19 @@ const PORT = 3000;
 const SOVEREIGN_ANCHOR: SovereignIdentityAnchor = OWNER_EMAIL;
 
 // Initialize Gemini Client
-const geminiApiKey = process.env.GEMINI_API_KEY || "";
-const ai = new GoogleGenAI({
-  apiKey: geminiApiKey,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
+// Gemini client: the caller's own key (entered in the app) wins; else the GEMINI_API_KEY env var.
+const geminiHttpOptions = { headers: { 'User-Agent': 'aistudio-build' } };
+const envAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "", httpOptions: geminiHttpOptions });
+const ai: GoogleGenAI = new Proxy({} as GoogleGenAI, {
+  get: (_t, prop) => {
+    const client = hasRequestKey()
+      ? new GoogleGenAI({ apiKey: resolveGeminiKey()!, httpOptions: geminiHttpOptions }) // never cached
+      : envAi;
+    return (client as any)[prop];
+  },
 });
 
+app.use(userKeyMiddleware);
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
@@ -476,7 +480,7 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     system: "Autonomous Multi-Agent Operating Framework",
     rootAnchor: SOVEREIGN_ANCHOR,
-    hasApiKey: !!geminiApiKey,
+    hasApiKey: !!resolveGeminiKey(),
     killSwitchEngaged,
     timestamp: new Date().toISOString()
   });
@@ -591,7 +595,7 @@ app.post("/api/orchestrate/plan-dag", async (req, res) => {
   try {
     let dagGraph: DAGSessionGraph;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -833,7 +837,7 @@ app.post("/api/orchestrate/execute-node", async (req, res) => {
   try {
     let executionResult: any;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -1022,7 +1026,7 @@ app.post("/api/orchestrate/arbitrate", async (req, res) => {
 
   try {
     let result: any;
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -1108,7 +1112,7 @@ app.post("/api/evaluator/audit-trace", async (req, res) => {
   try {
     let evaluation: CriticEvaluation;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -1211,7 +1215,7 @@ app.post("/api/evaluator/mutate-prompt", async (req, res) => {
   try {
     let mutation: any;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -1550,7 +1554,7 @@ app.post("/api/leads/parse-resume", async (req, res) => {
   try {
     let profile: CandidateParsedProfile;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -1674,7 +1678,7 @@ app.post("/api/leads/scrape-url", async (req, res) => {
   try {
     let scrapedLead: JobLead;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -1843,7 +1847,7 @@ app.post("/api/leads/synthesize-cover-letter", async (req, res) => {
   try {
     let result: any;
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const response = await ai.models.generateContent({
         model: "gemini-3.7-flash",
         contents: prompt,
@@ -2175,7 +2179,7 @@ ${rawJD || "Full-stack AI Systems Architect role focusing on high-throughput DAG
   try {
     let modeResult: any = {};
 
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       let modePrompt = "";
       if (mode === "eval" || mode === "re-eval" || mode === "scan") {
         modePrompt = `
@@ -2770,7 +2774,7 @@ app.post("/api/router/parse-dictation", async (req, res) => {
   };
 
   try {
-    if (geminiApiKey) {
+    if (resolveGeminiKey()) {
       const prompt = `You are the invisible 'LLM-Router' high-precision deterministic parsing engine for the Autonomous Sovereign Operating System.
 Your mission: Take the raw spoken transcript from dictation and perform strict, deterministic semantic extraction into a structured JSON object containing:
 1. 'calendarEvents': any appointments, meetings, calendar dates, deadlines, reviews, or timed events mentioned. Normalize relative dates (e.g. 'tomorrow', 'next Friday at 3pm', 'in two days') relative to the reference date: "${referenceDate}". Format 'date' as YYYY-MM-DD and 'time' as HH:mm if available.
